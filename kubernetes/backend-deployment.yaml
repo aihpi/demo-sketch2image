@@ -21,12 +21,10 @@ spec:
         image: ghcr.io/aihpi/sketch2image-backend:latest
         resources:
           limits:
-            nvidia.com/gpu: 3
+            nvidia.com/gpu: 1
         ports:
         - containerPort: 8000
         env:
-        - name: NVIDIA_VISIBLE_DEVICES
-          value: "0,1,2"
         - name: DEVICE
           value: "cuda"
         - name: HOST
