@@ -2,10 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
+  namespace: s2i
   labels:
     app: backend
 spec:
-  replicas: 1
+  replicas: 0 # Managed by KEDA
   selector:
     matchLabels:
       app: backend
@@ -14,27 +15,23 @@ spec:
       labels:
         app: backend
     spec:
-      imagePullSecrets:
-      - name: ghcr-secret
       containers:
       - name: backend
         image: ghcr.io/aihpi/sketch2image-backend:latest
-        resources:
-          limits:
-            nvidia.com/gpu: 1
-        ports:
-        - containerPort: 8000
+        imagePullPolicy: IfNotPresent # Optimize to prevent expired PAT registry issues
         env:
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "0"
         - name: DEVICE
-          value: "cuda"
+          value: cuda
         - name: HOST
-          value: "0.0.0.0"
+          value: 0.0.0.0
         - name: PORT
           value: "8000"
         - name: DEBUG_MODE
           value: "false"
         - name: DEFAULT_MODEL_ID
-          value: "t2i_adapter_sdxl"
+          value: t2i_adapter_sdxl
         - name: NUM_INFERENCE_STEPS
           value: "40"
         - name: GUIDANCE_SCALE
@@ -42,18 +39,31 @@ spec:
         - name: OUTPUT_IMAGE_SIZE
           value: "512"
         - name: PUBLIC_URL
-          value: "https://s2i.aisc.hpi.de"
+          value: https://s2i.aisc.hpi.de
         - name: HUGGING_FACE_HUB_TOKEN
           valueFrom:
             secretKeyRef:
-              name: huggingface-token
               key: token
-        
+              name: huggingface-token
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        resources:
+          limits:
+            nvidia.com/gpu: "1"
         volumeMounts:
-        - name: dataset-storage
-          mountPath: /app/dataset
-        - name: huggingface-cache
-          mountPath: /root/.cache/huggingface
+        - mountPath: /app/dataset
+          name: dataset-storage
+        - mountPath: /root/.cache/huggingface
+          name: huggingface-cache
+      imagePullSecrets:
+      - name: ghcr-secret
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-A30
+      tolerations:
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+        operator: Exists
       volumes:
       - name: dataset-storage
         persistentVolumeClaim:
@@ -61,22 +71,3 @@ spec:
       - name: huggingface-cache
         persistentVolumeClaim:
           claimName: huggingface-cache-pvc
-      nodeSelector:
-        nvidia.com/gpu.product: NVIDIA-A30
-      tolerations:
-      - key: nvidia.com/gpu
-        operator: Exists
-        effect: NoSchedule
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: backend-service
-spec:
-  selector:
-    app: backend
-  ports:
-    - protocol: TCP
-      port: 8000
-      targetPort: 8000
-  type: ClusterIP

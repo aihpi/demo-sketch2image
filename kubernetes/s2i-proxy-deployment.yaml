@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-proxy
+  namespace: s2i
+  labels:
+    app: backend-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-proxy
+  template:
+    metadata:
+      labels:
+        app: backend-proxy
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+      volumes:
+      - name: config-volume
+        configMap:
+          name: backend-proxy-config

@@ -1,0 +1,31 @@
+apiVersion: http.keda.sh/v1alpha1
+kind: HTTPScaledObject
+metadata:
+  name: s2i-backend
+  namespace: s2i
+spec:
+  scaleTargetRef:
+    name: backend
+    kind: Deployment
+    apiVersion: apps/v1
+    service: backend-pod-service
+    port: 8000
+  hosts:
+    - "backend-service"
+    - "backend-service:8000"
+    - "backend-service.s2i.svc.cluster.local"
+    - "backend-service.s2i.svc.cluster.local:8000"
+    - "backend-service.s2i.svc"
+    - "backend-service.s2i"
+    - "s2i.aisc.hpi.de"
+    - "s2i.aisc.hpi.de:8000"
+    - "s2i.aisc.hpi.de:443"
+    - "s2i.aisc.hpi.de:80"
+    - "localhost"
+    - "localhost:8000"
+  pathPrefixes:
+    - /
+  replicas:
+    min: 0
+    max: 1
+  scaledownPeriod: 300
