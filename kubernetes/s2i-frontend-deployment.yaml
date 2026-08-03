@@ -26,17 +26,3 @@ spec:
           value: "http://backend-service:8000"
         - name: NODE_ENV
           value: "production"
-    
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: frontend-service
-spec:
-  selector:
-    app: frontend
-  ports:
-    - protocol: TCP
-      port: 3000
-      targetPort: 3000
-  type: NodePort
